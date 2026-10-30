@@ -1,34 +1,36 @@
-# Stage 1 — build the app
-FROM dhi.io/node:26-dev AS build
+FROM node:22-alpine AS builder
+
+# Working directory
 
 WORKDIR /app
 
-COPY package*.json ./
-
-RUN npm install --legacy-peer-deps
-
-# Install vite explicitly if not already in package.json
-RUN npm list vite > /dev/null 2>&1 || npm install --no-save vite@5.4.11
+#Get all code in
 
 COPY . .
 
+# Install dependenices (stores to /node_modeules
+
+RUN npm install --legacy-peer-deps
+
+#Frontend Build (stores to /dist)
+
 RUN npm run build
 
-# Stage 2 — distroless runtime (minimal, secure)
-FROM dhi.io/node:26
+# ---------- Stage 1 ends --------
+# ---------- Stage 2 starts ------
+
+FROM dhi.io/node:26 AS runner
+
+#Working directory
 
 WORKDIR /app
 
-# Copy built files from builder
-COPY --from=build /app/dist ./dist
-
-# Copy all node_modules from builder (includes vite)
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
 
 COPY vite.preview.config.js ./vite.config.js
 
-EXPOSE 4173
+# Run the app
 
-# Use exec form for proper signal handling
-ENTRYPOINT ["node", "--no-warnings"]
-CMD ["./node_modules/.bin/vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
+CMD ["node","./node_modules/.bin/vite","preview","--host", "0.0.0.0","--port","4173"]
+
