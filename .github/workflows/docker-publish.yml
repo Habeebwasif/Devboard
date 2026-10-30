@@ -1,0 +1,38 @@
+name: Docker Publish
+
+on:
+  push:
+    branches: ['**']        # every branch, to test Task 4
+  pull_request:
+    branches: [main] 
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        folder: [backend, frontend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set short SHA
+        id: vars                          # cut the first 7 characters of the SHA to use as a tag
+        run: echo "sha_short=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Log in to Docker Hub
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build (and push on main only)
+        uses: docker/build-push-action@v7
+        with:
+          context: ./${{ matrix.folder }}
+          push: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/devboard-${{ matrix.folder }}:latest
+            ${{ secrets.DOCKER_USERNAME }}/devboard-${{ matrix.folder }}:sha-${{ steps.vars.outputs.sha_short }}
