@@ -1,3 +1,5 @@
+![Docker Publish](https://github.com/Habeebwasif/devboard/actions/workflows/docker-publish.yml/badge.svg)
+
 # DevBoard — Advanced (UI + Go + Postgres)
 
 This is the same DevBoard UI as the `master` branch, but now the data comes
